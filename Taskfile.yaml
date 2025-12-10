@@ -1,0 +1,148 @@
+version: "3"
+dotenv: ['.env']
+
+vars:
+  REGISTRY: '{{.REGISTRY | default "atrdocker01.atr.local:7444"}}'
+  KC_VERSION: '{{.KC_VERSION | default "26.1.0"}}'
+  CLI_VERSION: '{{.CLI_VERSION | default "6.4.0"}}'
+  AWS_PREFIX: '{{.AWS_PREFIX | default ""}}'
+
+tasks:
+  # ============================================
+  # Config Build
+  # ============================================
+
+  config:build:smartfactory:
+    desc: Build realm config for smartfactory (base)
+    cmds:
+      - scripts/build-realm.sh smartfactory
+
+  config:build:smartfactory:umsicht:
+    desc: Build realm config for smartfactory + umsicht
+    cmds:
+      - scripts/build-realm.sh smartfactory umsicht
+
+  config:build:iot-gateway:
+    desc: Build realm config for iot-gateway (base)
+    cmds:
+      - scripts/build-realm.sh iot-gateway
+
+  # ============================================
+  # Config Import
+  # ============================================
+
+  config:import:
+    desc: Import merged realm config into running Keycloak
+    cmds:
+      - docker compose --profile import up keycloak-cli
+
+  # ============================================
+  # Docker: Keycloak
+  # ============================================
+
+  docker:build:keycloak:
+    desc: Build Keycloak image
+    cmds:
+      - |
+        docker build \
+          -t {{.REGISTRY}}/keycloak:{{.KC_VERSION}} \
+          --build-arg KC_VERSION={{.KC_VERSION}} \
+          --label "git.commit.hash=${BUILD_SOURCEVERSION:-local}" \
+          --label "git.commit.branch=${BUILD_SOURCEBRANCHNAME:-local}" \
+          .
+
+  docker:push:keycloak:
+    desc: Push Keycloak image to registry
+    cmds:
+      - docker push {{.REGISTRY}}/keycloak:{{.KC_VERSION}}
+
+  # ============================================
+  # Docker: Keycloak CLI
+  # ============================================
+
+  docker:push:keycloak-cli:
+    desc: Pull, tag and push Keycloak Config CLI
+    cmds:
+      - docker pull adorsys/keycloak-config-cli:latest-{{.KC_VERSION}}
+      - docker tag adorsys/keycloak-config-cli:latest-{{.KC_VERSION}} {{.REGISTRY}}/keycloak-config-cli:{{.CLI_VERSION}}
+      - docker push {{.REGISTRY}}/keycloak-config-cli:{{.CLI_VERSION}}
+
+  # ============================================
+  # AWS Push
+  # ============================================
+
+  aws:push:
+    desc: Push both images to AWS
+    cmds:
+      - /home/ubuntu/bin/aws-upload.sh keycloak {{.AWS_PREFIX}} {{.REGISTRY}}/keycloak {{.KC_VERSION}}
+      - /home/ubuntu/bin/aws-upload.sh keycloak-config-cli {{.AWS_PREFIX}} {{.REGISTRY}}/keycloak-config-cli {{.CLI_VERSION}}
+
+  # ============================================
+  # Development
+  # ============================================
+
+  dev:up:
+    desc: Start Keycloak stack for development
+    cmds:
+      - docker compose up -d postgres keycloak
+      - echo "Keycloak starting... check 'docker compose logs -f keycloak'"
+
+  dev:down:
+    desc: Stop Keycloak stack
+    cmds:
+      - docker compose down
+
+  dev:logs:
+    desc: Show Keycloak logs
+    cmds:
+      - docker compose logs -f keycloak
+
+  dev:clean:
+    desc: Stop and remove all data (including database)
+    cmds:
+      - docker compose down -v
+
+  # ============================================
+  # Secrets Management
+  # ============================================
+
+  secrets:setup:
+    desc: Create Docker Secrets (interactive, run once)
+    cmds:
+      - scripts/setup-secrets.sh
+
+  secrets:list:
+    desc: List existing Docker Secrets
+    cmds:
+      - docker secret ls
+
+  secrets:remove:
+    desc: Remove all Keycloak Docker Secrets
+    cmds:
+      - docker secret rm admin_password db_password keystore_password gateway_secret user_secret node_red_secret 2>/dev/null || true
+      - echo "Secrets removed"
+
+  # ============================================
+  # Production Deployment
+  # ============================================
+
+  deploy:
+    desc: Full deployment (requires secrets and merged config)
+    cmds:
+      - scripts/deploy.sh
+
+  # ============================================
+  # Utilities
+  # ============================================
+
+  check:
+    desc: Check dependencies
+    cmds:
+      - scripts/check-dependencies.sh
+
+  clean:
+    desc: Clean generated files
+    cmds:
+      - rm -rf config/merged/*.yaml
+      - rm -rf .tmp/
+      - rm -rf dist/

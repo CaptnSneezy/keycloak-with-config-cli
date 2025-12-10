@@ -1,0 +1,38 @@
+# Ignore everything
+*
+
+# Git
+!.gitignore
+
+# Documentation
+!README.md
+
+# Docker
+!Dockerfile
+!compose.yaml
+
+# Task runner
+!Taskfile.yaml
+
+# Environment template (never actual .env)
+!.env.example
+
+# Scripts
+!scripts/
+!scripts/*.sh
+
+# Config - base configs only
+!config/
+!config/smartfactory/
+!config/smartfactory/*.yaml
+!config/iot-gateway/
+!config/iot-gateway/*.yaml
+
+# Certs placeholder
+!certs/
+!certs/.gitkeep
+
+# Azure DevOps Pipeline
+!.azuredevops/
+!.azuredevops/pipelines/
+!.azuredevops/pipelines/*.yaml

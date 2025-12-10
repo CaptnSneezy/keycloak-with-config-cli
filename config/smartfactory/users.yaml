@@ -1,0 +1,115 @@
+users:
+  - username: atr-admin
+    enabled: true
+    email: atr-admin@atr-software.de
+    emailVerified: true
+    firstName: ATR
+    lastName: Admin
+    attributes:
+      description:
+        - Der Super-Admin.
+      atrIntern:
+        - true
+      personnelNumber:
+        - 999997
+    realmRoles:
+      - default-roles-smartfactory
+    credentials:
+      - type: password
+        value: password
+        temporary: true
+    groups:
+      - /APS_MANAGER
+      - /ASSET_MANAGER
+      - /ASSET_TYPE_MANAGER
+      - /ASSET_TYPE_VIEWER
+      - /ASSET_VIEWER
+      - /BATCH_MANAGER
+      - /BI_DASHBOARD_MANAGER
+      - /BI_DASHBOARD_VIEWER
+      - /CONFIGURATION_MANAGER
+      - /NODERED_MANAGER
+      - /NODERED_VIEWER
+      - /ORDER_MANAGER
+      - /ORDER_TYPE_MANAGER
+      - /ORDER_TYPE_VIEWER
+      - /ORDER_VIEWER
+      - /PRODUCT_MANAGER
+      - /PRODUCT_TYPE_MANAGER
+      - /PRODUCT_TYPE_VIEWER
+      - /PRODUCT_VIEWER
+      - /REPORTING_MANAGER
+      - /REPORTING_VIEWER
+      - /USER_GROUP_MANAGER
+      - /USER_GROUP_VIEWER
+      - /USER_MANAGER
+      - /USER_ROLE_MANAGER
+      - /USER_ROLE_VIEWER
+      - /USER_VIEWER
+  - username: demo-account
+    enabled: true
+    email: demo@example.com
+    emailVerified: true
+    firstName: Demo
+    lastName: Account
+    attributes:
+      atrIntern:
+        - true
+    realmRoles:
+      - default-roles-smartfactory
+    credentials:
+      - type: password
+        value: password
+        temporary: true
+    groups:
+      - /FUNCTIONACCOUNT
+  - username: customer-admin
+    enabled: true
+    email: customer-admin@test.test
+    emailVerified: true
+    firstName: Customer
+    lastName: Admin
+    attributes:
+      description:
+        - Beispiel für Admin eines Kunden.
+      atrIntern:
+        - true
+      personnelNumber:
+        - 999996
+    realmRoles:
+      - default-roles-smartfactory
+    credentials:
+      - type: password
+        value: password
+        temporary: true
+    groups:
+      - /USER_MANAGER
+  - username: customer-worker
+    enabled: true
+    email: customer-worker@test.test
+    emailVerified: true
+    firstName: Customer
+    lastName: Worker
+    attributes:
+      description:
+        - Beispiel für Werker eines Kunden.
+      atrIntern:
+        - true
+      personnelNumber:
+        - 999995
+    realmRoles:
+      - default-roles-smartfactory
+    credentials:
+      - type: password
+        value: password
+        temporary: true
+  - username: service-account-user-client
+    enabled: true
+    serviceAccountClientId: user-client
+    clientRoles:
+      realm-management:
+        - manage-users
+        - view-users
+        - query-users
+        - query-groups
+        - view-realm

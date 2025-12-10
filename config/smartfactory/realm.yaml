@@ -1,0 +1,5 @@
+realm: smartfactory
+enabled: true
+displayName: Keycloak
+attributes:
+  frontendUrl: https://DHOSTNAME:PORT_GATEWAY/keycloak
