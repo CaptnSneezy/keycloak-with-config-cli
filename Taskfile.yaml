@@ -20,11 +20,6 @@ tasks:
     cmds:
       - scripts/build-config.sh smartfactory umsicht
 
-  config:build:iot-gateway:
-    desc: Build realm config for iot-gateway (base)
-    cmds:
-      - scripts/build-config.sh iot-gateway
-
   # ============================================
   # Config Import
   # ============================================
@@ -32,6 +27,7 @@ tasks:
   config:import:
     desc: Import merged realm config into running Keycloak
     cmds:
+      - ./scripts/add-userprofile.sh smartfactory
       - docker compose --profile import up keycloak-cli
 
   # ============================================
@@ -74,31 +70,6 @@ tasks:
     cmds:
       - /home/ubuntu/bin/aws-upload.sh keycloak {{.AWS_PREFIX}} {{.REGISTRY}}/keycloak {{.TAG_KEYCLOAK}}
       - /home/ubuntu/bin/aws-upload.sh keycloak-config-cli {{.AWS_PREFIX}} {{.REGISTRY}}/keycloak-config-cli latest-{{.TAG_KEYCLOAK}}
-
-  # ============================================
-  # Development
-  # ============================================
-
-  dev:up:
-    desc: Start Keycloak stack for development
-    cmds:
-      - docker compose up -d postgres keycloak
-      - echo "Keycloak starting... check 'docker compose logs -f keycloak'"
-
-  dev:down:
-    desc: Stop Keycloak stack
-    cmds:
-      - docker compose down
-
-  dev:logs:
-    desc: Show Keycloak logs
-    cmds:
-      - docker compose logs -f keycloak
-
-  dev:clean:
-    desc: Stop and remove all data (including database)
-    cmds:
-      - docker compose down -v
 
   # ============================================
   # Utilities

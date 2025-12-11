@@ -14,6 +14,8 @@ services:
       - "${PORT_KEYCLOAK:-7444}:8443"
     restart: unless-stopped
     environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_HOSTNAME: ${DHOSTNAME:-localhost}
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: keycloak
@@ -73,12 +75,11 @@ services:
       KEYCLOAK_SSLVERIFY: "false"
       IMPORT_PATH: /config
       IMPORT_VARSUBSTITUTION_ENABLED: "true"
-      IMPORT_VAR_DHOSTNAME: ${DHOSTNAME:-localhost}
-      IMPORT_VAR_PORT_GATEWAY: ${PORT_GATEWAY:-443}
-      IMPORT_VAR_PORT_KEYCLOAK: ${PORT_KEYCLOAK:-7444}
-      IMPORT_VAR_GATEWAY_SECRET: ${GATEWAY_SECRET:-}
-      IMPORT_VAR_USER_SECRET: ${USER_SECRET:-}
-      IMPORT_VAR_NODE_RED_SECRET: ${NODE_RED_SECRET:-}
+      DHOSTNAME: ${DHOSTNAME:-innomes-dev-vm.atr.local}
+      PORT_GATEWAY: ${PORT_GATEWAY:-443}
+      GATEWAY_SECRET: ${GATEWAY_SECRET:-your-gateway-secret}
+      USER_SECRET: ${USER_SECRET:-your-user-secret}
+      NODE_RED_SECRET: ${NODE_RED_SECRET:-your-nodered-secret}
     volumes:
       - ./config/merged:/config:ro
     networks:

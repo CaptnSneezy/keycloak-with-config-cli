@@ -1,10 +1,6 @@
 # --- Versions
 ARG KC_VERSION=26.1.0
 
-# --- Initial Admin Entry
-ARG KC_BOOTSTRAP_ADMIN_USERNAME=admin
-ARG KC_BOOTSTRAP_ADMIN_PASSWORD=admin
-
 # --- Builder --- getting curl for healthcheck
 FROM registry.access.redhat.com/ubi8 AS builder
 LABEL stage=builder
