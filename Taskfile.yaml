@@ -3,9 +3,7 @@ dotenv: ['.env']
 
 vars:
   REGISTRY: '{{.REGISTRY | default "atrdocker01.atr.local:7444"}}'
-  KC_VERSION: '{{.KC_VERSION | default "26.1.0"}}'
-  CLI_VERSION: '{{.CLI_VERSION | default "6.4.0"}}'
-  AWS_PREFIX: '{{.AWS_PREFIX | default ""}}'
+  TAG_KEYCLOAK: '{{.TAG_KEYCLOAK | default "26.1.0"}}'
 
 tasks:
   # ============================================
@@ -15,17 +13,17 @@ tasks:
   config:build:smartfactory:
     desc: Build realm config for smartfactory (base)
     cmds:
-      - scripts/build-realm.sh smartfactory
+      - scripts/build-config.sh smartfactory
 
   config:build:smartfactory:umsicht:
     desc: Build realm config for smartfactory + umsicht
     cmds:
-      - scripts/build-realm.sh smartfactory umsicht
+      - scripts/build-config.sh smartfactory umsicht
 
   config:build:iot-gateway:
     desc: Build realm config for iot-gateway (base)
     cmds:
-      - scripts/build-realm.sh iot-gateway
+      - scripts/build-config.sh iot-gateway
 
   # ============================================
   # Config Import
@@ -45,8 +43,8 @@ tasks:
     cmds:
       - |
         docker build \
-          -t {{.REGISTRY}}/keycloak:{{.KC_VERSION}} \
-          --build-arg KC_VERSION={{.KC_VERSION}} \
+          -t {{.REGISTRY}}/keycloak:{{.TAG_KEYCLOAK}} \
+          --build-arg KC_VERSION={{.TAG_KEYCLOAK}} \
           --label "git.commit.hash=${BUILD_SOURCEVERSION:-local}" \
           --label "git.commit.branch=${BUILD_SOURCEBRANCHNAME:-local}" \
           .
@@ -54,7 +52,7 @@ tasks:
   docker:push:keycloak:
     desc: Push Keycloak image to registry
     cmds:
-      - docker push {{.REGISTRY}}/keycloak:{{.KC_VERSION}}
+      - docker push {{.REGISTRY}}/keycloak:{{.TAG_KEYCLOAK}}
 
   # ============================================
   # Docker: Keycloak CLI
@@ -63,9 +61,9 @@ tasks:
   docker:push:keycloak-cli:
     desc: Pull, tag and push Keycloak Config CLI
     cmds:
-      - docker pull adorsys/keycloak-config-cli:latest-{{.KC_VERSION}}
-      - docker tag adorsys/keycloak-config-cli:latest-{{.KC_VERSION}} {{.REGISTRY}}/keycloak-config-cli:{{.CLI_VERSION}}
-      - docker push {{.REGISTRY}}/keycloak-config-cli:{{.CLI_VERSION}}
+      - docker pull adorsys/keycloak-config-cli:latest-{{.TAG_KEYCLOAK}}
+      - docker tag adorsys/keycloak-config-cli:latest-{{.TAG_KEYCLOAK}} {{.REGISTRY}}/keycloak-config-cli:latest-{{.TAG_KEYCLOAK}}
+      - docker push {{.REGISTRY}}/keycloak-config-cli:latest-{{.TAG_KEYCLOAK}}
 
   # ============================================
   # AWS Push
@@ -74,8 +72,8 @@ tasks:
   aws:push:
     desc: Push both images to AWS
     cmds:
-      - /home/ubuntu/bin/aws-upload.sh keycloak {{.AWS_PREFIX}} {{.REGISTRY}}/keycloak {{.KC_VERSION}}
-      - /home/ubuntu/bin/aws-upload.sh keycloak-config-cli {{.AWS_PREFIX}} {{.REGISTRY}}/keycloak-config-cli {{.CLI_VERSION}}
+      - /home/ubuntu/bin/aws-upload.sh keycloak {{.AWS_PREFIX}} {{.REGISTRY}}/keycloak {{.TAG_KEYCLOAK}}
+      - /home/ubuntu/bin/aws-upload.sh keycloak-config-cli {{.AWS_PREFIX}} {{.REGISTRY}}/keycloak-config-cli latest-{{.TAG_KEYCLOAK}}
 
   # ============================================
   # Development
@@ -103,35 +101,6 @@ tasks:
       - docker compose down -v
 
   # ============================================
-  # Secrets Management
-  # ============================================
-
-  secrets:setup:
-    desc: Create Docker Secrets (interactive, run once)
-    cmds:
-      - scripts/setup-secrets.sh
-
-  secrets:list:
-    desc: List existing Docker Secrets
-    cmds:
-      - docker secret ls
-
-  secrets:remove:
-    desc: Remove all Keycloak Docker Secrets
-    cmds:
-      - docker secret rm admin_password db_password keystore_password gateway_secret user_secret node_red_secret 2>/dev/null || true
-      - echo "Secrets removed"
-
-  # ============================================
-  # Production Deployment
-  # ============================================
-
-  deploy:
-    desc: Full deployment (requires secrets and merged config)
-    cmds:
-      - scripts/deploy.sh
-
-  # ============================================
   # Utilities
   # ============================================
 
@@ -145,4 +114,3 @@ tasks:
     cmds:
       - rm -rf config/merged/*.yaml
       - rm -rf .tmp/
-      - rm -rf dist/

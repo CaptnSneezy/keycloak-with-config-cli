@@ -1,21 +1,25 @@
 #!/bin/bash
 set -e
 
-echo "[kc-start] Updating CA trust store..."
+echo "[kc-start.sh] Updating CA trust store..."
 update-ca-trust extract
 
-# Read password from secret file if provided
-if [[ -f "$KC_HTTPS_KEY_STORE_PASSWORD_FILE" ]]; then
-    export KC_HTTPS_KEY_STORE_PASSWORD=$(cat "$KC_HTTPS_KEY_STORE_PASSWORD_FILE")
-fi
+echo "[kc-start.sh] Starting Keycloak in production mode..."
+/opt/keycloak/bin/kc.sh start \
+                        --optimized \
+                        --https-key-store-password="${KC_HTTPS_KEY_STORE_PASSWORD}" &
 
-if [[ -f "$KC_BOOTSTRAP_ADMIN_PASSWORD_FILE" ]]; then
-    export KC_BOOTSTRAP_ADMIN_PASSWORD=$(cat "$KC_BOOTSTRAP_ADMIN_PASSWORD_FILE")
-fi
+echo "[kc-start.sh] Wait for Keycloak to become healthy..."
+timeout=60
+elapsed=0
+while ! curl -k --silent --fail https://localhost:9000/health/ready > /dev/null; do
+  sleep 2
+  elapsed=$((elapsed + 2))
+  if [ "$elapsed" -ge "$timeout" ]; then
+    echo "Timeout on waiting for Keycloak to become healthy"
+    exit 1
+  fi
+done
+echo "[kc-start.sh] Keycloak started successful!"
 
-if [[ -f "$KC_DB_PASSWORD_FILE" ]]; then
-    export KC_DB_PASSWORD=$(cat "$KC_DB_PASSWORD_FILE")
-fi
-
-echo "[kc-start] Starting Keycloak..."
-exec /opt/keycloak/bin/kc.sh start --optimized
+wait

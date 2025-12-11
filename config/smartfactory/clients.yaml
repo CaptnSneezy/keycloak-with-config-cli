@@ -4,10 +4,10 @@ clients:
     description: Client with use of reverse proxy from kong
     protocol: openid-connect
     publicClient: false
-    secret: GATEWAY_SECRET
+    secret: $(GATEWAY_SECRET)
     redirectUris:
-      - https://DHOSTNAME:PORT_GATEWAY/*
-      - https://DHOSTNAME/*
+      - https://$(DHOSTNAME):$(PORT_GATEWAY)/*
+      - https://$(DHOSTNAME)/*
     protocolMappers:
       - name: "groups"
         protocol: "openid-connect"
@@ -24,8 +24,8 @@ clients:
     protocol: openid-connect
     publicClient: true
     redirectUris:
-      - https://DHOSTNAME:PORT_GATEWAY/*
-      - https://DHOSTNAME/*
+      - https://$(DHOSTNAME):$(PORT_GATEWAY)/*
+      - https://$(DHOSTNAME)/*
       - http://localhost:4200/*
     protocolMappers:
       - name: "groups"
@@ -38,14 +38,14 @@ clients:
           id.token.claim: "true"
           access.token.claim: "true"
     attributes:
-      frontchannel.logout.url: "https://DHOSTNAME/red/oidc-frontchannel-logout.html"
+      frontchannel.logout.url: "https://$(DHOSTNAME)/red/oidc-frontchannel-logout.html"
     frontchannelLogout: "true"
   - clientId: nodered-client
     name: Node-Red Client
     description: ""
     protocol: openid-connect
     publicClient: false
-    secret: NODE_RED_SECRET
+    secret: $(NODE_RED_SECRET)
     serviceAccountsEnabled: true
     implicitFlowEnabled: true
     standardFlowEnabled: true
@@ -57,7 +57,7 @@ clients:
     description: ""
     protocol: openid-connect
     publicClient: false
-    secret: USER_SECRET
+    secret: $(USER_SECRET)
     serviceAccountsEnabled: true
     implicitFlowEnabled: true
     standardFlowEnabled: true

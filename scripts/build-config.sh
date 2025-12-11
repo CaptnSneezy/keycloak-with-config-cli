@@ -1,111 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# =============================================================================
+# Configuration
+# =============================================================================
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(realpath "$SCRIPT_DIR/..")"
 
-# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# Check dependencies
-"$SCRIPT_DIR/check-dependencies.sh"
+PROCESSING_ORDER=(
+  "roles.yaml"
+  "groups.yaml"
+  "client-scopes.yaml"
+  "clients.yaml"
+  "users.yaml"
+  "ldap.yaml"
+)
 
-# Parse arguments
-if [[ $# -lt 1 ]]; then
-  echo "Usage: $0 <product> [customer]"
-  echo "Available products: smartfactory, iot-gateway"
-  echo "Optional: customer name for customer-specific config"
-  echo ""
-  echo "Examples:"
-  echo "  $0 smartfactory"
-  echo "  $0 smartfactory umsicht"
-  exit 1
-fi
-
-PRODUCT="$1"
-CUSTOMER="${2:-}"
-
-# Validate product
-case "$PRODUCT" in
-  smartfactory|iot-gateway)
-    ;;
-  *)
-    echo -e "${RED}Error: Invalid product '$PRODUCT'${NC}"
-    echo "Available products: smartfactory, iot-gateway"
-    exit 1
-    ;;
-esac
-
-# Paths
-CONFIG_DIR="$PROJECT_ROOT/config/$PRODUCT"
-OUTPUT_DIR="$PROJECT_ROOT/config/merged"
-MERGED_REALM="$OUTPUT_DIR/${PRODUCT}-realm.yaml"
-TEMP_DIR="$PROJECT_ROOT/.tmp"
-CUSTOMER_CLONE_DIR="$TEMP_DIR/customer-config"
-
-echo -e "${CYAN}[build-config] Building configuration for product: $PRODUCT${NC}"
-if [[ -n "$CUSTOMER" ]]; then
-  echo "[build-config] Customer: $CUSTOMER"
-fi
-
-# Check if product config directory exists
-if [[ ! -d "$CONFIG_DIR" ]]; then
-  echo -e "${RED}[build-config] Error: Product directory not found: $CONFIG_DIR${NC}"
-  exit 1
-fi
-
-# Prepare directories
-mkdir -p "$OUTPUT_DIR"
-mkdir -p "$TEMP_DIR"
-
-# Clone customer repo if customer is specified
-CUSTOMER_CONFIG_DIR=""
-if [[ -n "$CUSTOMER" ]]; then
-  # Load .env for CUSTOMER_CONFIG_REPO_URL
-  if [[ -f "$PROJECT_ROOT/.env" ]]; then
-    source "$PROJECT_ROOT/.env"
-  fi
-
-  CUSTOMER_CONFIG_REPO_URL="${CUSTOMER_CONFIG_REPO_URL:-}"
-
-  if [[ -z "$CUSTOMER_CONFIG_REPO_URL" ]]; then
-    echo -e "${RED}[build-config] Error: CUSTOMER_CONFIG_REPO_URL not set${NC}"
-    echo "Set it in .env file or export it"
-    exit 1
-  fi
-
-  echo "[build-config] Cloning customer repository..."
-  rm -rf "$CUSTOMER_CLONE_DIR"
-
-  if ! git clone --depth 1 "$CUSTOMER_CONFIG_REPO_URL" "$CUSTOMER_CLONE_DIR" 2>/dev/null; then
-    echo -e "${RED}[build-config] Error: Failed to clone customer repository${NC}"
-    exit 1
-  fi
-
-  CUSTOMER_CONFIG_DIR="$CUSTOMER_CLONE_DIR/$CUSTOMER/$PRODUCT/keycloak"
-
-  if [[ ! -d "$CUSTOMER_CONFIG_DIR" ]]; then
-    echo -e "${RED}[build-config] Warning: Customer config not found: $CUSTOMER_CONFIG_DIR${NC}"
-    echo "[build-config] Continuing without customer-specific config..."
-    CUSTOMER_CONFIG_DIR=""
-  else
-    echo "[build-config] Found customer config at: $CUSTOMER_CONFIG_DIR"
-  fi
-fi
-
-# Use realm.yaml as base
-REALM_FILE="$CONFIG_DIR/realm.yaml"
-if [[ ! -s "$REALM_FILE" ]]; then
-  echo -e "${RED}[build-config] Error: Missing or empty realm.yaml in $CONFIG_DIR${NC}"
-  exit 1
-fi
-
-cp "$REALM_FILE" "$MERGED_REALM"
-
-# Mapping: filename -> yaml_path:id_field
 declare -A FILE_TO_PATH_AND_KEY=(
   ["users.yaml"]="users:username"
   ["roles.yaml"]="roles:realm:name"
@@ -115,22 +31,51 @@ declare -A FILE_TO_PATH_AND_KEY=(
   ["ldap.yaml"]="components:special"
 )
 
-# Merge function
+# =============================================================================
+# Functions
+# =============================================================================
+
+usage() {
+  echo "Usage: $0 <product> [customer]"
+  echo ""
+  echo "Arguments:"
+  echo "  product   smartfactory | iot-gateway"
+  echo "  customer  Optional: customer name for overlay config"
+  echo ""
+  echo "Examples:"
+  echo "  $0 smartfactory"
+  echo "  $0 smartfactory umsicht"
+  exit 1
+}
+
+error() {
+  echo -e "${RED}[build-config] Error: $1${NC}" >&2
+  exit 1
+}
+
+info() {
+  echo -e "${CYAN}[build-config]${NC} $1"
+}
+
+success() {
+  echo -e "${GREEN}[build-config]${NC} $1"
+}
+
 merge_yaml_file() {
   local file="$1"
   local source_dir="$2"
   local label="$3"
   local path_key="${FILE_TO_PATH_AND_KEY[$file]}"
-
   local source="$source_dir/$file"
+
   [[ ! -s "$source" ]] && return 0
 
-  echo "  Merging $file ($label)"
+  echo "  -> $file ($label)"
 
   # Special handling for components (ldap.yaml)
   if [[ "$path_key" == "components:special" ]]; then
-    yq eval-all --no-doc 'select(fileIndex == 0) * select(fileIndex == 1)' "$MERGED_REALM" "$source" \
-      > "$MERGED_REALM.tmp"
+    yq eval-all --no-doc 'select(fileIndex == 0) * select(fileIndex == 1)' \
+      "$MERGED_REALM" "$source" > "$MERGED_REALM.tmp"
     mv "$MERGED_REALM.tmp" "$MERGED_REALM"
     return 0
   fi
@@ -145,64 +90,99 @@ merge_yaml_file() {
       (select(fileIndex == 0) | .'"$path"') as $base |
       (select(fileIndex == 1) | .'"$path"') as $override |
       select(fileIndex == 0) |
-      .'"$path"' = (
-        ($base // []) + ($override // []) |
-        group_by(.'"$id_field"') |
-        map(reverse | .[0])
-      )
+      .'"$path"' = (($base // []) + ($override // []) | group_by(.'"$id_field"') | map(reverse | .[0]))
     ' "$MERGED_REALM" "$source" > "$MERGED_REALM.tmp"
   else
     yq eval-all --no-doc '
       (select(fileIndex == 0) | .'"$path"'.'"$mid"') as $base |
       (select(fileIndex == 1) | .'"$path"'.'"$mid"') as $override |
       select(fileIndex == 0) |
-      .'"$path"'.'"$mid"' = (
-        ($base // []) + ($override // []) |
-        group_by(.'"$id_field"') |
-        map(reverse | .[0])
-      )
+      .'"$path"'.'"$mid"' = (($base // []) + ($override // []) | group_by(.'"$id_field"') | map(reverse | .[0]))
     ' "$MERGED_REALM" "$source" > "$MERGED_REALM.tmp"
   fi
 
   mv "$MERGED_REALM.tmp" "$MERGED_REALM"
 }
 
-PROCESSING_ORDER=(
-  "roles.yaml"
-  "groups.yaml"
-  "client-scopes.yaml"
-  "clients.yaml"
-  "users.yaml"
-  "ldap.yaml"
-)
+clone_customer_repo() {
+  [[ -f "$PROJECT_ROOT/.env" ]] && source "$PROJECT_ROOT/.env"
 
-# Merge base product configuration
-echo "[build-config] Merging base configuration..."
-for file in "${PROCESSING_ORDER[@]}"; do
-  if [[ -n "${FILE_TO_PATH_AND_KEY[$file]:-}" ]]; then
-    merge_yaml_file "$file" "$CONFIG_DIR" "base"
+  CUSTOMER_CONFIG_REPO_URL="${CUSTOMER_CONFIG_REPO_URL:-}"
+  [[ -z "$CUSTOMER_CONFIG_REPO_URL" ]] && error "CUSTOMER_CONFIG_REPO_URL not set in .env"
+
+  info "Cloning customer repository..."
+  rm -rf "$CUSTOMER_CLONE_DIR"
+
+  git clone --depth 1 "$CUSTOMER_CONFIG_REPO_URL" "$CUSTOMER_CLONE_DIR" 2>/dev/null \
+    || error "Failed to clone customer repository"
+
+  CUSTOMER_CONFIG_DIR="$CUSTOMER_CLONE_DIR/$CUSTOMER/$PRODUCT/keycloak"
+
+  if [[ ! -d "$CUSTOMER_CONFIG_DIR" ]]; then
+    echo -e "${RED}[build-config] Warning: Customer config not found: $CUSTOMER_CONFIG_DIR${NC}"
+    CUSTOMER_CONFIG_DIR=""
+  else
+    info "Found customer config: $CUSTOMER_CONFIG_DIR"
   fi
+}
+
+# =============================================================================
+# Main
+# =============================================================================
+
+"$SCRIPT_DIR/check-dependencies.sh"
+
+[[ $# -lt 1 ]] && usage
+
+PRODUCT="$1"
+CUSTOMER="${2:-}"
+
+case "$PRODUCT" in
+  smartfactory|iot-gateway) ;;
+  *) error "Invalid product '$PRODUCT'. Available: smartfactory, iot-gateway" ;;
+esac
+
+# Paths
+CONFIG_DIR="$PROJECT_ROOT/config/$PRODUCT"
+OUTPUT_DIR="$PROJECT_ROOT/config/merged"
+MERGED_REALM="$OUTPUT_DIR/${PRODUCT}-realm.yaml"
+TEMP_DIR="$PROJECT_ROOT/.tmp"
+CUSTOMER_CLONE_DIR="$TEMP_DIR/customer-config"
+CUSTOMER_CONFIG_DIR=""
+
+info "Building: $PRODUCT${CUSTOMER:+ + $CUSTOMER}"
+
+[[ ! -d "$CONFIG_DIR" ]] && error "Product directory not found: $CONFIG_DIR"
+
+mkdir -p "$OUTPUT_DIR" "$TEMP_DIR"
+
+# Clone customer repo if specified
+[[ -n "$CUSTOMER" ]] && clone_customer_repo
+
+# Start with realm.yaml as base
+REALM_FILE="$CONFIG_DIR/realm.yaml"
+[[ ! -s "$REALM_FILE" ]] && error "Missing or empty realm.yaml in $CONFIG_DIR"
+cp "$REALM_FILE" "$MERGED_REALM"
+
+# Merge base configuration
+info "Merging base configuration..."
+for file in "${PROCESSING_ORDER[@]}"; do
+  merge_yaml_file "$file" "$CONFIG_DIR" "base"
 done
 
-# Merge customer-specific configuration
+# Merge customer configuration
 if [[ -n "$CUSTOMER_CONFIG_DIR" ]]; then
-  echo "[build-config] Merging customer configuration..."
+  info "Merging customer configuration..."
   for file in "${PROCESSING_ORDER[@]}"; do
-    if [[ -n "${FILE_TO_PATH_AND_KEY[$file]:-}" ]]; then
-      merge_yaml_file "$file" "$CUSTOMER_CONFIG_DIR" "customer"
-    fi
+    merge_yaml_file "$file" "$CUSTOMER_CONFIG_DIR" "customer"
   done
 fi
 
 # Cleanup
-if [[ -n "$CUSTOMER" ]]; then
-  rm -rf "$CUSTOMER_CLONE_DIR"
-fi
+[[ -n "$CUSTOMER" ]] && rm -rf "$CUSTOMER_CLONE_DIR"
 
 echo ""
-echo -e "${GREEN}[build-config] Build complete!${NC}"
-echo "  Product: $PRODUCT"
-if [[ -n "$CUSTOMER" ]]; then
-  echo "  Customer: $CUSTOMER"
-fi
-echo "  Output: $MERGED_REALM"
+success "Build complete!"
+echo "  Product:  $PRODUCT"
+[[ -n "$CUSTOMER" ]] && echo "  Customer: $CUSTOMER"
+echo "  Output:   $MERGED_REALM"
