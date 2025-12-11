@@ -25,9 +25,9 @@ parameters:
   - name: customer
     displayName: Select customer config
     type: string
-    default: 'none'
+    default: 'atr'
     values:
-      - none
+      - atr
       - umsicht
 
 variables:
@@ -72,7 +72,7 @@ stages:
           # --- Smartfactory (base) ---
           - bash: task config:build:smartfactory
             displayName: 'Build smartfactory'
-            condition: and(eq('${{ parameters.product }}', 'smartfactory'), eq('${{ parameters.customer }}', 'none'))
+            condition: and(eq('${{ parameters.product }}', 'smartfactory'), eq('${{ parameters.customer }}', 'atr'))
 
           # --- Smartfactory + Umsicht ---
           - bash: |
@@ -88,7 +88,7 @@ stages:
           # --- IoT-Gateway (base) ---
           - bash: task config:build:iot-gateway
             displayName: 'Build iot-gateway'
-            condition: and(eq('${{ parameters.product }}', 'iot-gateway'), eq('${{ parameters.customer }}', 'none'))
+            condition: and(eq('${{ parameters.product }}', 'iot-gateway'), eq('${{ parameters.customer }}', 'atr'))
 
           # Copy deployment files
           - task: CopyFiles@2
@@ -96,15 +96,8 @@ stages:
             inputs:
               SourceFolder: '$(Build.SourcesDirectory)'
               Contents: |
-                compose.yaml
-                .env.example
                 config/merged/**
-                scripts/setup-secrets.sh
-                scripts/deploy.sh
                 scripts/add-userprofile.sh
-                scripts/cli-entrypoint.sh
-                certs/.gitkeep
-                README.md
               TargetFolder: '$(Build.ArtifactStagingDirectory)/keycloak'
               flattenFolders: false
 
