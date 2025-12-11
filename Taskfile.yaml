@@ -79,9 +79,3 @@ tasks:
     desc: Check dependencies
     cmds:
       - scripts/check-dependencies.sh
-
-  clean:
-    desc: Clean generated files
-    cmds:
-      - rm -rf config/merged/*.yaml
-      - rm -rf .tmp/
