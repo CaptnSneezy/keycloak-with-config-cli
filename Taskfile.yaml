@@ -58,8 +58,8 @@ tasks:
     desc: Pull, tag and push Keycloak Config CLI
     cmds:
       - docker pull adorsys/keycloak-config-cli:latest-{{.TAG_KEYCLOAK}}
-      - docker tag adorsys/keycloak-config-cli:latest-{{.TAG_KEYCLOAK}} {{.REGISTRY}}/keycloak-config-cli:latest-{{.TAG_KEYCLOAK}}
-      - docker push {{.REGISTRY}}/keycloak-config-cli:latest-{{.TAG_KEYCLOAK}}
+      - docker tag adorsys/keycloak-config-cli:latest-{{.TAG_KEYCLOAK}} {{.REGISTRY}}/keycloak-config-cli:{{.TAG_KEYCLOAK}}
+      - docker push {{.REGISTRY}}/keycloak-config-cli:{{.TAG_KEYCLOAK}}
 
   # ============================================
   # AWS Push
@@ -69,7 +69,7 @@ tasks:
     desc: Push both images to AWS
     cmds:
       - /home/ubuntu/bin/aws-upload.sh keycloak {{.AWS_PREFIX}} {{.REGISTRY}}/keycloak {{.TAG_KEYCLOAK}}
-      - /home/ubuntu/bin/aws-upload.sh keycloak-config-cli {{.AWS_PREFIX}} {{.REGISTRY}}/keycloak-config-cli latest-{{.TAG_KEYCLOAK}}
+      - /home/ubuntu/bin/aws-upload.sh keycloak-config-cli {{.AWS_PREFIX}} {{.REGISTRY}}/keycloak-config-cli {{.TAG_KEYCLOAK}}
 
   # ============================================
   # Development

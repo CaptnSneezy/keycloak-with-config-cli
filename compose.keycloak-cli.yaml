@@ -2,7 +2,7 @@ name: keycloak
 
 services:
   keycloak-cli:
-    image: ${REGISTRY:-atrdocker01.atr.local:7444}/keycloak-config-cli:latest-${TAG_KEYCLOAK:-26.1.0}
+    image: ${REGISTRY}/keycloak-config-cli:${TAG_KEYCLOAK}
     container_name: keycloak-cli
     restart: "no"
     environment:
@@ -14,11 +14,11 @@ services:
       KEYCLOAK_SSLVERIFY: "false"
       IMPORT_PATH: /config
       IMPORT_VARSUBSTITUTION_ENABLED: "true"
-      DHOSTNAME: ${DHOSTNAME:-innomes-dev-vm.atr.local}
-      PORT_GATEWAY: ${PORT_GATEWAY:-443}
-      GATEWAY_SECRET: ${GATEWAY_SECRET:-your-gateway-secret}
-      USER_SECRET: ${USER_SECRET:-your-user-secret}
-      NODE_RED_SECRET: ${NODE_RED_SECRET:-your-nodered-secret}
+      DHOSTNAME: ${DHOSTNAME}
+      PORT_GATEWAY: ${PORT_GATEWAY}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      USER_SECRET: ${USER_SECRET}
+      NODE_RED_SECRET: ${NODE_RED_SECRET}
     volumes:
       - ./config/merged:/config:ro
     networks:
