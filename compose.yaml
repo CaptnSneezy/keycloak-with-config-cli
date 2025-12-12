@@ -24,7 +24,7 @@ services:
       KC_HTTPS_KEY_STORE_PASSWORD: ${KEYSTORE_PASSWORD:-changeit}
     volumes:
       - /etc/ssl/certs:/etc/pki/ca-trust/source/anchors:ro
-      - ./certs/name.p12:/opt/keycloak/conf/truststore/server.p12:ro
+      - ./cert/name.p12:/opt/keycloak/conf/truststore/server.p12:ro
     deploy:
       resources:
         limits:

@@ -30,8 +30,8 @@
 !config/iot-gateway/*.yaml
 
 # Certs placeholder
-!certs/
-!certs/.gitkeep
+!cert/
+!cert/.gitkeep
 
 # Azure DevOps Pipeline
 !.azuredevops/
