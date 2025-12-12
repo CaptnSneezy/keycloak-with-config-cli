@@ -28,7 +28,7 @@ tasks:
     desc: Import merged realm config into running Keycloak
     cmds:
       - ./scripts/add-userprofile.sh smartfactory
-      - docker compose --profile import up keycloak-cli
+      - docker compose -f compose.keycloak-cli.yaml up
 
   # ============================================
   # Docker: Keycloak

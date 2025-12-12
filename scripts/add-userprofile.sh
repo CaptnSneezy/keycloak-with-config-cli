@@ -46,8 +46,6 @@ if [[ -f "$ENV_FILE" ]]; then
     if [[ -z "${!key:-}" ]]; then
       export "$key=$value"
       echo "[add-userprofile.sh] Loaded $key from .env"
-    else
-      echo "[add-userprofile.sh] Keeping existing $key (not overriding)"
     fi
   done < <(grep -v '^#' "$ENV_FILE" | grep -v '^$')
 fi
