@@ -72,6 +72,20 @@ tasks:
       - /home/ubuntu/bin/aws-upload.sh keycloak-config-cli {{.AWS_PREFIX}} {{.REGISTRY}}/keycloak-config-cli latest-{{.TAG_KEYCLOAK}}
 
   # ============================================
+  # Development
+  # ============================================
+
+  dev:up:
+    desc: Start docker stack without orphans
+    cmds:
+      - docker compose up -d --remove-orphans
+
+  dev:down:
+    desc: Stop docker stack
+    cmds:
+      - docker compose down
+
+  # ============================================
   # Utilities
   # ============================================
 

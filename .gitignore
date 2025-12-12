@@ -10,6 +10,7 @@
 # Docker
 !Dockerfile
 !compose.yaml
+!compose.keycloak-cli.yaml
 
 # Task runner
 !Taskfile.yaml

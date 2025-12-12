@@ -98,6 +98,7 @@ stages:
               Contents: |
                 config/merged/**
                 scripts/add-userprofile.sh
+                compose.keycloak-cli.yaml
               TargetFolder: '$(Build.ArtifactStagingDirectory)/keycloak'
               flattenFolders: false
 
