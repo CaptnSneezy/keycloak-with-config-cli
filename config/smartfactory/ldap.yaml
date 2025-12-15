@@ -1,0 +1,171 @@
+components:
+  org.keycloak.storage.UserStorageProvider:
+    - name: "ldaps"
+      providerId: "ldap"
+      config:
+        # Connection settings
+        connectionUrl:
+          - "ldaps://atrpdc02.atr.local:636"
+        enabled:
+          - "false"
+        priority:
+          - "0"
+        # Authentication
+        authType:
+          - "simple"
+        bindDn:
+          - "CN=Keycloak Userfederation,CN=Users,DC=atr,DC=local"
+        bindCredential:
+          - "Ho$hiBy7"
+        # Connection settings
+        startTls:
+          - "false"
+        useTruststoreSpi:
+          - "always"
+        connectionPooling:
+          - "true"
+        # LDAP searching and updating
+        editMode:
+          - "READ_ONLY"
+        usersDn:
+          - "DC=atr,DC=local"
+        usernameLDAPAttribute:
+          - "sAMAccountName"
+        rdnLDAPAttribute:
+          - "cn"
+        uuidLDAPAttribute:
+          - "objectGUID"
+        userObjectClasses:
+          - "person, organizationalPerson, user"
+        customUserSearchFilter:
+          - "(&(objectClass=user)(!(objectClass=computer)))"
+        searchScope:
+          - "2"
+        readTimeout:
+          - "15000"
+        pagination:
+          - "true"
+        referral:
+          - "ignore"
+        # Synchronization settings
+        importEnabled:
+          - "true"
+        syncRegistrations:
+          - "false"
+        batchSizeForSync:
+          - "100"
+        fullSyncPeriod:
+          - "86400"
+        changedSyncPeriod:
+          - "3600"
+        periodicFullSync:
+          - "false"
+        periodicChangedUsersSync:
+          - "false"
+        # Kerberos integration
+        allowKerberosAuthentication:
+          - "false"
+        useKerberosForPasswordAuthentication:
+          - "false"
+        # Cache settings
+        cachePolicy:
+          - "DEFAULT"
+      subComponents:
+        org.keycloak.storage.ldap.mappers.LDAPStorageMapper:
+          # Username Mapper
+          - name: "username"
+            providerId: "user-attribute-ldap-mapper"
+            config:
+              ldap.attribute:
+                - "sAMAccountName"
+              user.model.attribute:
+                - "username"
+              read.only:
+                - "true"
+              always.read.value.from.ldap:
+                - "false"
+              is.mandatory.in.ldap:
+                - "true"
+          # First Name Mapper
+          - name: "first name"
+            providerId: "user-attribute-ldap-mapper"
+            config:
+              ldap.attribute:
+                - "givenName"
+              user.model.attribute:
+                - "firstName"
+              read.only:
+                - "false"
+              always.read.value.from.ldap:
+                - "true"
+              is.mandatory.in.ldap:
+                - "true"
+          # Last Name Mapper
+          - name: "last name"
+            providerId: "user-attribute-ldap-mapper"
+            config:
+              ldap.attribute:
+                - "sn"
+              user.model.attribute:
+                - "lastName"
+              read.only:
+                - "false"
+              always.read.value.from.ldap:
+                - "true"
+              is.mandatory.in.ldap:
+                - "true"
+          # Email Mapper
+          - name: "email"
+            providerId: "user-attribute-ldap-mapper"
+            config:
+              ldap.attribute:
+                - "mail"
+              user.model.attribute:
+                - "email"
+              read.only:
+                - "false"
+              always.read.value.from.ldap:
+                - "true"
+              is.mandatory.in.ldap:
+                - "false"
+          # Full Name Mapper
+          - name: "full name"
+            providerId: "full-name-ldap-mapper"
+            config:
+              ldap.full.name.attribute:
+                - "cn"
+              read.only:
+                - "false"
+              write.only:
+                - "false"
+          # Creation Date Mapper
+          - name: "creation date"
+            providerId: "user-attribute-ldap-mapper"
+            config:
+              ldap.attribute:
+                - "whenCreated"
+              user.model.attribute:
+                - "createTimestamp"
+              read.only:
+                - "true"
+              always.read.value.from.ldap:
+                - "false"
+              is.mandatory.in.ldap:
+                - "false"
+          # Modify Date Mapper
+          - name: "modify date"
+            providerId: "user-attribute-ldap-mapper"
+            config:
+              ldap.attribute:
+                - "whenChanged"
+              user.model.attribute:
+                - "modifyTimestamp"
+              read.only:
+                - "true"
+              always.read.value.from.ldap:
+                - "false"
+              is.mandatory.in.ldap:
+                - "false"
+          - name: "kerberos principal attribute mapper"
+            providerId: "kerberos-principal-attribute-mapper"
+            config: {}
